@@ -25,7 +25,7 @@ class ApiController extends Controller
     function getResult(Request $request)
     {
         $prices = $this->getPrices();
-        $zip_code = ZipCode::select('postal_code','city','state','suburb');
+        $zip_code = ZipCode::select('postal_code','city','state');
         if($request->municipio != null){
             $zip_code = $zip_code->where('city',$request->municipio);
         }
@@ -37,7 +37,7 @@ class ApiController extends Controller
         foreach($zip_code as $item){
             foreach($prices['results'] as $value){
                 if($value['codigopostal'] == $item->postal_code){
-                    $value['colonia'] = $item->suburb;
+                    // $value['colonia'] = $item->suburb;
                     $value['municipio'] = $item->city;
                     $value['state'] = $item->state;
                     array_push($result,$value);
@@ -45,23 +45,12 @@ class ApiController extends Controller
             }
         } 
         // ordenar
-        uasort($result, function($a, $b) use($request){
-            if ($a['regular'] == $b['regular']) {
-                return 0;
-            }
-            if($request->ordenar == 0){
-                // menor a mayor
-                return ($a['regular'] < $b['regular']) ? -1 : 1;
-            }else{
-                // mayor a menor
-                return ($a['regular'] > $b['regular']) ? -1 : 1;
-            }
-        });
+        array_multisort(array_column($result, 'regular'),$request->ordenar == 0 ?SORT_ASC :SORT_DESC, $result);
 
         if(sizeof($result)>0){
             return response()->json(array('success' => true, 'results' => $result), 200);
         }else{
-            return response()->json(array('success' => false, 'results' => $result), 404);
+            return response()->json(array('success' => false, 'results' => $result));
         }
         
     }
